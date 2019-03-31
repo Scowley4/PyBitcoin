@@ -15,7 +15,7 @@ def pull_random_blocks(n=20, path='data'):
             json.dump(block, outfile)
         print(f'{i+1} block data collected', end='\r')
 
-def test_fixed_merkle():
+def test_compute_merkle():
     """Test to make sure merkle root computation matches known root."""
     for i in range(20):
         ind = str(i).zfill(3)
