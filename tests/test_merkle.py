@@ -92,3 +92,27 @@ def test_merkletree_init_widow_nonhashes():
     assert roothex == '(((a+b)+(c+d))+((e+e)+(e+e)))'
     assert merk.depth == 3
 
+def test_merkletree_regularadd_singlelayer_nonhashes():
+    hashes = ['a', 'b', 'c']
+    to_add = ['d']
+    merk = MerkleTree(hashes=hashes, hash_func=nonhash)
+    print('Before add:', merk.root.get_hexdigest())
+    merk.add_hash('d')
+    roothex = merk.root.get_hexdigest()
+    print('After add:', roothex)
+    comp_roothex = compute_merkle(hashes+to_add, nonhash)
+    assert roothex == comp_roothex, (f'{roothex} != {comp_roothex}')
+
+def test_merkletree_regularadd_multilayer_nonhashes():
+    hashes = ['a', 'b', 'c', 'd', 'e', 'f']
+    to_add = ['g']
+    merk = MerkleTree(hashes=hashes, hash_func=nonhash)
+    print('Before add:', merk.root.get_hexdigest())
+    for l in to_add:
+        merk.add_hash(l)
+    roothex = merk.root.get_hexdigest()
+    print('After add:', roothex)
+    comp_roothex = compute_merkle(hashes+to_add, nonhash)
+    assert roothex == comp_roothex, (f'{roothex} != {comp_roothex}')
+
+
