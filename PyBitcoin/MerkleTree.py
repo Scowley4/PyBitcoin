@@ -85,15 +85,21 @@ class MerkleTree:
         if cur.layer == self.depth-1:
             new_node = LeafNode(cur, hexhash, self.depth)
             cur.right = new_node
-            return
 
-        cur.right = HashNode(cur, None, None, self.hash_func, cur.layer+1)
-        cur = cur.right
-        while cur.layer != self.depth-1:
-            cur.left = HashNode(cur, None, None, self.hash_func, cur.layer+1)
+        else:
+            cur.right = HashNode(cur, None, None, self.hash_func, cur.layer+1)
+            cur = cur.right
+            while cur.layer != self.depth-1:
+                cur.left = HashNode(cur, None, None, self.hash_func, cur.layer+1)
 
-        new_node = LeafNode(cur, hexhash, self.depth)
-        cur.left = new_node
+            new_node = LeafNode(cur, hexhash, self.depth)
+            cur.left = new_node
+
+        # Send the changes up the tree
+        while cur is not None:
+            cur.get_hexdigest(fresh=True)
+            cur = cur.parent
+
 
     def _change_root_add(self, h):
         pass
@@ -117,8 +123,8 @@ class HashNode(Node):
         self.hash_func = hash_func
         self.layer = layer
 
-    def get_hexdigest(self):
-        if self.hexdigest is None:
+    def get_hexdigest(self, fresh=False):
+        if self.hexdigest is None or fresh:
             lhex = self.left.get_hexdigest()
             rhex = lhex if self.right is None else self.right.get_hexdigest()
             self.hexdigest = self.hash_func(lhex, rhex)
