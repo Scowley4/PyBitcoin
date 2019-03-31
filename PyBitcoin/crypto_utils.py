@@ -15,6 +15,6 @@ def concathex_doubleSHA256(hex1, hex2):
     the difference in endianness as well.
     """
     # Reverse for big-endian/little-endian conversion
-    hash1 = bytes.fromhex(hash1)[::-1]
-    hash2 = bytes.fromhex(hash2)[::-1]
-    return double_SHA256(hash1+hash2)[::-1].hex()
+    hex1 = bytes.fromhex(hex1)[::-1]
+    hex2 = bytes.fromhex(hex2)[::-1]
+    return doubleSHA256(hex1+hex2)[::-1].hex()

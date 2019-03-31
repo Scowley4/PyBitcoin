@@ -1,11 +1,11 @@
-import context
 import sys
 for k in ['PyBitcoin', 'PyBitcoin.MerkleTree', 'PyBitcoin.crypto_utils']:
     try:
         del sys.modules[k]
     except KeyError:
         pass
-from PyBitcoin.MerkleTree import compute_merkle, bitcoin_hash, MerkleTree
+from PyBitcoin.MerkleTree import compute_merkle, MerkleTree
+from PyBitcoin.crypto_utils import concathex_doubleSHA256
 
 
 import json
@@ -50,12 +50,12 @@ def gen_testblocks():
 def test_compute_merkle():
     """Test to make sure merkle root computation matches known root."""
     for block, filename in gen_testblocks():
-        assert compute_merkle(block['tx'], bitcoin_hash) == block['merkleroot'], (
+        assert compute_merkle(block['tx'], concathex_doubleSHA256) == block['merkleroot'], (
         f'Merkle root computed in {filename} not equal to known root')
 
 def test_merkletree_init():
     for block, filename in gen_testblocks():
-        merk = MerkleTree(hashes=block['tx'], hash_func=bitcoin_hash)
+        merk = MerkleTree(hashes=block['tx'], hash_func=concathex_doubleSHA256)
         roothex = merk.root.get_hexdigest()
         trueroothex = block['merkleroot']
         assert roothex == trueroothex, (
