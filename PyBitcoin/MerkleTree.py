@@ -1,14 +1,7 @@
-from Crypto.PublicKey import RSA
-from Crypto.Signature import PKCS1_v1_5
-from Crypto.Hash import SHA256
-from .crypto_utils import double_SHA256
-
-# http://www.righto.com/2014/02/bitcoin-mining-hard-way-algorithms.html
-def bitcoin_hash(hash1, hash2):
-    # Reverse for big-endian/little-endian conversion
-    hash1 = bytes.fromhex(hash1)[::-1]
-    hash2 = bytes.fromhex(hash2)[::-1]
-    return double_SHA256(hash1+hash2)[::-1].hex()
+try:
+    from .crypto_utils import doubleSHA256, concathex_doubleSHA256
+except ModuleNotFoundError:
+    from crypto_utils import doubleSHA256, concathex_doubleSHA256
 
 def compute_merkle(hashes, hash_func):
     # If there is one hash left, it is the root
@@ -24,28 +17,85 @@ def compute_merkle(hashes, hash_func):
 
 class MerkleTree:
     """"""
-    def __init__(self, items=None, hash_func=double_SHA256):
-        if items is None:
-            items = []
+    def __init__(self, hashes=None, hash_func=concathex_doubleSHA256):
+        if hashes is None:
+            hashes = []
 
-        self.items = items.copy()
-        self.root = None
+        self.hashes = hashes.copy()
+        self.leafs = []
         self.hash_func = hash_func
 
-    def build_from_items(self, items):
-        pass
+        self.root = HashNode(None, None, None, self.hash_func, 0)
 
-    def add_data(self, data):
+        self.depth = self.find_num_layers(len(self.hashes))
+
+        self._init_from_hashes()
+
+    def _init_from_hashes(self):
+        def r_build(nodes, layer):
+            if layer == 0:
+                return nodes[0]
+            new_nodes = []
+            for i in range(0, len(nodes)-1, 2):
+                new_node = HashNode(None, nodes[i], nodes[i+1],
+                                    self.hash_func, layer-1)
+                new_node.left.parent = new_node
+                new_node.right.parent = new_node
+                new_nodes.append(new_node)
+
+            if len(nodes) % 2 == 1:
+                new_node = HashNode(None, nodes[-1], None,
+                                self.hash_func, layer-1)
+                new_node.left.parent = new_node
+                new_nodes.append(new_node)
+            return r_build(new_nodes, layer-1)
+
+        self.leafs = [LeafNode(None, h, self.depth) for h in self.hashes]
+
+        # If only one hash, the root is just that hash
+        if len(self.leafs) == 1:
+            self.root = self.leafs[0]
+            return
+        self.root = r_build(self.leafs, self.depth)
+
+    @staticmethod
+    def find_num_layers(n):
+        i = 0
+        tot = 1
+        while tot < n:
+            i += 1
+            tot *= 2
+        return i
+
+    def add_hash(self, hexhash):
         """Adds data to the merkletree.
 
         Constructs a node from the data and calls the add_node method."""
-        self.add_node(LeafNode(None, data))
+        if len(self.leafs) == 2**self.depth:
+            self._change_root_add(hexhash)
+        else:
+            self._regular_add(hexhash)
 
-    def add_node(self, node):
-        """Inserts a new node into the tree."""
-        pass
+    def _regular_add(self, hexhash):
+        cur = self.leafs[-1].parent
+        while cur.right is not None:
+            cur = cur.parent
 
-    def compute_root(self):
+        # Just one layer above new node location
+        if cur.layer == self.depth-1:
+            new_node = LeafNode(cur, hexhash, self.depth)
+            cur.right = new_node
+            return
+
+        cur.right = HashNode(cur, None, None, self.hash_func, cur.layer+1)
+        cur = cur.right
+        while cur.layer != self.depth-1:
+            cur.left = HashNode(cur, None, None, self.hash_func, cur.layer+1)
+
+        new_node = LeafNode(cur, hexhash, self.depth)
+        cur.left = new_node
+
+    def _change_root_add(self, h):
         pass
 
     def __contains__(self, item):
@@ -60,10 +110,19 @@ class Node:
 
 class HashNode(Node):
     """"""
-    def __init__(self, parent, left, right, hash_func):
+    def __init__(self, parent, left, right, hash_func, layer):
         super().__init__(parent, left, right)
+        self.hexdigest = None
         self.digest = None
         self.hash_func = hash_func
+        self.layer = layer
+
+    def get_hexdigest(self):
+        if self.hexdigest is None:
+            lhex = self.left.get_hexdigest()
+            rhex = lhex if self.right is None else self.right.get_hexdigest()
+            self.hexdigest = self.hash_func(lhex, rhex)
+        return self.hexdigest
 
     def get_digest(self, fresh=False, r_fresh=False):
         if self.digest is None or fresh or r_fresh:
@@ -73,11 +132,13 @@ class HashNode(Node):
 
 class LeafNode(Node):
     """"""
-    def __init__(self, parent, data, hash_func):
+    def __init__(self, parent, hexhash, layer):
         super().__init__(parent, None, None)
-        self.data = data
-        self.digest = None
-        self.hash_func = hash_func
+        self.hexhash = hexhash
+        self.layer = layer
+
+    def get_hexdigest(self):
+        return self.hexhash
 
     def get_digest(self, fresh=False, r_fresh=False):
         if self.digest is None or fresh or r_fresh:
