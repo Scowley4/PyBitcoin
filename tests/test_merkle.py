@@ -4,7 +4,7 @@ for k in ['PyBitcoin', 'PyBitcoin.MerkleTree', 'PyBitcoin.crypto_utils']:
         del sys.modules[k]
     except KeyError:
         pass
-from PyBitcoin.MerkleTree import compute_merkle, MerkleTree
+from PyBitcoin.Merkle import compute_merkle, MerkleTree
 from PyBitcoin.crypto_utils import concathex_doubleSHA256
 
 import json
