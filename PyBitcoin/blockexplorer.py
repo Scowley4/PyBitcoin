@@ -8,6 +8,10 @@ def get_random_block(a=0, b=269400):
     height = random.randint(a, b)
     return get_block(get_block_hash(height))
 
+def get_random_tx():
+    block = get_random_block()
+    return get_tx(random.choice(block['tx']))
+
 def get_block_hash(height):
     """Returns the string blockhash for a given blockheight."""
     return requests.get(BASE+f'/api/block-index/{height}').json()['blockHash']
