@@ -21,42 +21,44 @@ class MerkleTree:
         if hashes is None:
             hashes = []
 
-        self.hashes = hashes.copy()
-        self.leafs = []
+        self.hashes = [h for h in hashes]
+        self.leafs = [LeafNode(None, h, 0) for h in self.hashes]
         self.hash_func = hash_func
 
         self.root = HashNode(None, None, None, self.hash_func, 0)
 
-        self.depth = self.find_num_layers(len(self.hashes))
+        self.height = self.find_num_layers(len(self.hashes))
 
         self._init_from_hashes()
 
     def _init_from_hashes(self):
-        def r_build(nodes, layer):
-            if layer == 0:
-                return nodes[0]
-            new_nodes = []
-            for i in range(0, len(nodes)-1, 2):
-                new_node = HashNode(None, nodes[i], nodes[i+1],
-                                    self.hash_func, layer-1)
-                new_node.left.parent = new_node
-                new_node.right.parent = new_node
-                new_nodes.append(new_node)
 
-            if len(nodes) % 2 == 1:
-                new_node = HashNode(None, nodes[-1], None,
-                                self.hash_func, layer-1)
-                new_node.left.parent = new_node
-                new_nodes.append(new_node)
-            return r_build(new_nodes, layer-1)
-
-        self.leafs = [LeafNode(None, h, self.depth) for h in self.hashes]
-
+        # If no hashes:
+        if len(self.leafs) == 0:
+            return
         # If only one hash, the root is just that hash
         if len(self.leafs) == 1:
             self.root = self.leafs[0]
             return
-        self.root = r_build(self.leafs, self.depth)
+        self.root = self._r_build(self.leafs, 0)
+
+    def _r_build(self, nodes, layer):
+        if layer == self.height:
+            return nodes[0]
+        new_nodes = []
+        for i in range(0, len(nodes)-1, 2):
+            new_node = HashNode(None, nodes[i], nodes[i+1],
+                                self.hash_func, layer+1)
+            new_node.left.parent = new_node
+            new_node.right.parent = new_node
+            new_nodes.append(new_node)
+
+        if len(nodes) % 2 == 1:
+            new_node = HashNode(None, nodes[-1], None,
+                            self.hash_func, layer+1)
+            new_node.left.parent = new_node
+            new_nodes.append(new_node)
+        return self._r_build(new_nodes, layer+1)
 
     @staticmethod
     def find_num_layers(n):
@@ -71,41 +73,62 @@ class MerkleTree:
         """Adds data to the merkletree.
 
         Constructs a node from the data and calls the add_node method."""
-        if len(self.leafs) == 2**self.depth:
+        if len(self.leafs) == 0:
+            self.__init__([hexhash], self.hash_func)
+        elif len(self.leafs) == 2**self.height:
             self._change_root_add(hexhash)
         else:
             self._regular_add(hexhash)
 
     def _regular_add(self, hexhash):
+        # Find the node above the last leaf
         cur = self.leafs[-1].parent
+        # Search for place that node doesn't have a right node
         while cur.right is not None:
             cur = cur.parent
+        self._extend_tree(hexhash, cur)
+
+    def _change_root_add(self, hexhash):
+        # Increment height
+        self.height += 1
+
+        # Add the new root
+        new_root = HashNode(None, self.root, None,
+                            self.hash_func, self.height)
+        self.root.parent = new_root
+        self.root = new_root
+
+        self._extend_tree(hexhash, new_root)
+
+
+    def _extend_tree(self, hexhash, cur):
+        """Fill in the tree to add hexhash to the tree."""
 
         # Just one layer above new node location
-        if cur.layer == self.depth-1:
-            new_node = LeafNode(cur, hexhash, self.depth)
+        if cur.layer == 1:
+            new_node = LeafNode(cur, hexhash, 0)
             cur.right = new_node
-
         else:
-            cur.right = HashNode(cur, None, None, self.hash_func, cur.layer+1)
+            # First step is always right, since the tree fills in left to right
+            cur.right = HashNode(cur, None, None, self.hash_func, cur.layer-1)
             cur = cur.right
-            while cur.layer != self.depth-1:
-                cur.left = HashNode(cur, None, None, self.hash_func, cur.layer+1)
-
-            new_node = LeafNode(cur, hexhash, self.depth)
+            while cur.layer != 1:
+                cur.left = HashNode(cur, None, None, self.hash_func, cur.layer-1)
+                cur = cur.left
+            new_node = LeafNode(cur, hexhash, 0)
             cur.left = new_node
 
-        # Send the changes up the tree
+        self.leafs.append(new_node)
+
+        # Rehash cur and all nodes above it
+        self._rehash(cur)
+
+
+    def _rehash(self, cur):
+        """Rehash this and all nodes above."""
         while cur is not None:
             cur.get_hexdigest(fresh=True)
             cur = cur.parent
-
-
-    def _change_root_add(self, h):
-        pass
-
-    def __contains__(self, item):
-        pass
 
 class Node:
     """"""
@@ -130,12 +153,6 @@ class HashNode(Node):
             self.hexdigest = self.hash_func(lhex, rhex)
         return self.hexdigest
 
-    def get_digest(self, fresh=False, r_fresh=False):
-        if self.digest is None or fresh or r_fresh:
-            self.digest = self.hash_func(self.left.get_digest(r_fresh, r_fresh) +
-                                         self.right.get_digest(r_fresh, r_fresh))
-        return self.digest
-
 class LeafNode(Node):
     """"""
     def __init__(self, parent, hexhash, layer):
@@ -145,8 +162,3 @@ class LeafNode(Node):
 
     def get_hexdigest(self):
         return self.hexhash
-
-    def get_digest(self, fresh=False, r_fresh=False):
-        if self.digest is None or fresh or r_fresh:
-            self.digest = self.hash_func(str(data).encode())
-        return self.digest
