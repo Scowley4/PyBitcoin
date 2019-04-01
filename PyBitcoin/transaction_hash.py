@@ -1,5 +1,4 @@
 import Crypto.Hash.SHA256 as hash_func, binascii
-from crypto_utils import double_SHA256
 tx = {
       'nVersion': '01000000',
       'inputs': {
@@ -7,12 +6,16 @@ tx = {
         }
      }
 
+def version_to_32bithex_LE(version):
+    return bytes.fromhex('{:08X}'.format(version))[::-1].hex()
+
 class Transaction:
     def __init__(self):
         pass
 
-def tx_to_bytes(tx):
-    pass
+
+
+#asm https://bitcoin.stackexchange.com/questions/24651/whats-asm-in-transaction-inputs-scriptsig/24659
 
 
 
@@ -21,4 +24,4 @@ tx = '01000000010000000000000000000000000000000000000000000000000000000000000000
 
 tx_bytes = bytes.fromhex(tx)
 
-hashed = double_SHA256(tx_bytes)
+#hashed = double_SHA256(tx_bytes)
