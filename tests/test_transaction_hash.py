@@ -3,6 +3,70 @@ import json
 import os
 
 DATADIR = 'data'
+TXSDIR = os.path.join(DATADIR, 'txs')
+
+os.makedirs(TXSDIR, exist_ok=True)
+
+def pull_random_txs(n=20, path=TXSDIR):
+    """Makes TX data files to test tx hashing."""
+    from PyBitcoin import blockexplorer as be
+    txs = []
+    for i in range(n):
+        tx = be.get_random_tx()
+        rawtx = be.get_rawtx(tx['txid'])
+        tx['rawtx'] = rawtx
+        txs.append(tx)
+        print(f'{i+1} tx data collected', end='\r')
+    print()
+
+    for i, tx in enumerate(txs):
+        ind = str(i).zfill(3)
+        filename = os.path.join(path, f'random_tx{ind}.txt')
+        with open(filename, 'w') as outfile:
+            json.dump(tx, outfile)
+
+def pull_random_cb_txs(n=20, path=TXSDIR):
+    """Makes TX data files to test tx hashing."""
+    from PyBitcoin import blockexplorer as be
+    txs = []
+    tx = {}
+    for i in range(n):
+        while not tx.get('isCoinBase'):
+            tx = be.get_random_tx()
+        rawtx = be.get_rawtx(tx['txid'])
+        tx['rawtx'] = rawtx
+        txs.append(tx)
+        print(f'{i+1} tx data collected', end='\r')
+    print()
+
+    for i, tx in enumerate(txs):
+        ind = str(i).zfill(3)
+        filename = os.path.join(path, f'coinbase_tx{ind}.txt')
+        with open(filename, 'w') as outfile:
+            json.dump(tx, outfile)
+
+def gen_randomtxs():
+    for i in range(20):
+        ind = str(i).zfill(3)
+        filename = os.path.join(TXSDIR, f'random_tx{ind}.txt')
+        with open(filename) as infile:
+            tx = json.load(infile)
+        yield (tx, filename)
+
+def gen_coinbasetxs():
+    for i in range(20):
+        ind = str(i).zfill(3)
+        filename = os.path.join(TXSDIR, f'coinbase_tx{ind}.txt')
+        with open(filename) as infile:
+            tx = json.load(infile)
+        yield (tx, filename)
+
+def gen_alltxs():
+    for filename in os.listdir(TXSDIR):
+        filename = os.path.join(TXSDIR, filename)
+        with open(filename) as infile:
+            tx = json.load(infile)
+        yield (tx, filename)
 
 def test_hex_byte_swap():
     pairs = [
@@ -44,7 +108,20 @@ def test_genesis_tx_to_hex():
         h = th.tx_to_hex(tx)
         assert h == tx['rawtx']
 
+def test_tx_to_hex():
+    for tx, filename in gen_alltxs():
+        rawtx = th.tx_to_hex(tx)
+        assert rawtx == tx['rawtx'], (f'{filename} error in tx_to_hex')
 
-
-
-
+def test_tx_to_hex_all():
+    wrong = []
+    error = []
+    for tx, filename in gen_alltxs():
+        try:
+            rawtx = th.tx_to_hex(tx)
+            if rawtx != tx['rawtx']:
+                wrong.append(filename)
+        except:
+            error.append(filename)
+    assert (len(wrong)==0) and (len(error)==0), (
+        f'wrong {len(wrong)}: {wrong}\nerror {len(error)}: {error}')
