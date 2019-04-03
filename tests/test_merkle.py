@@ -10,10 +10,15 @@ from PyBitcoin.crypto_utils import concathex_doubleSHA256
 import json
 import os
 
-BLOCKSDIR = os.path.join('data', 'blocks')
+
+
+DATADIR = 'data'
+BLOCKSDIR = os.path.join(DATADIR, 'blocks')
+
+os.makedirs(BLOCKSDIR, exist_ok=True)
 
 def pull_random_blocks(n=20, path=BLOCKSDIR):
-    """Makes data files to test in test_fixed_merkle."""
+    """Makes block data files to test block/merkle hashing."""
     from PyBitcoin import blockexplorer as be
     blocks = []
     # To provide variety for tests
