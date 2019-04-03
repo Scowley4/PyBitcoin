@@ -33,6 +33,7 @@ def varint_to_int(varint):
     return int(hex_byte_swap(h), 16)
 
 def tx_to_hex(tx):
+    """Sends the tx (dict) to raw hex value to be hashed."""
     # Version number - 4 bytes
     result = int_to_nbyte_hex(tx['version'], 4)
 
@@ -43,21 +44,36 @@ def tx_to_hex(tx):
     for i in range(n_in):
         txin = tx['vin'][i]
 
-        # TXID - 32 bytes
-        result += txin['txid']
+        # If it is a regular tx
+        if 'txid' in txin:
+            # TXID - 32 bytes (Reversed)
+            result += hex_byte_swap(txin['txid'])
 
-        # Index of prev output - 4 bytes
-        result += int_to_nbyte_hex(txin['vout'], 4)
+            # Index of prev output - 4 bytes
+            result += int_to_nbyte_hex(txin['vout'], 4)
 
-        sig = txin['scriptSig']['hex']
+            # sig on the scriptSig
+            sig = txin['scriptSig']['hex']
+        elif 'coinbase' in txin:
+            result += int_to_nbyte_hex(0, 32)
+
+            # Index is max - 4 bytes
+            result += 'f'*8
+
+            # sig on the coinbase
+            sig = txin['coinbase']
+        else:
+            raise ValueError('txin has no txid or coinbase')
+
         # Size of scriptSig in bytes - Varint
         result += int_to_varint(len(sig)//2)
 
         # scriptSig
         result += sig
 
-        # NOTE I'm not sure what the sequence is
-        result += 'ffffffff'
+        # NOTE I'm not sure what the sequence is - 4 bytes
+        print(txin)
+        result += int_to_nbyte_hex((txin['sequence']), 4)
 
     # Number of outputs - Varint
     n_out = len(tx['vout'])
