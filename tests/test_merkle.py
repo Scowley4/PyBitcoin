@@ -42,7 +42,7 @@ def pull_random_blocks(n=20, path=BLOCKSDIR):
         print(filename)
         print()
 
-def gen_testblocks():
+def gen_randomblocks():
     for i in range(20):
         ind = str(i).zfill(3)
         filename = os.path.join(BLOCKSDIR, f'random_block{ind}.txt')
@@ -50,14 +50,21 @@ def gen_testblocks():
             block = json.load(infile)
         yield (block, filename)
 
+def gen_allblocks():
+    for filename in os.listdir(BLOCKSDIR):
+        filename = os.path.join(BLOCKSDIR, filename)
+        with open(filename) as infile:
+            block = json.load(infile)
+        yield (block, filename)
+
 def test_compute_merkle():
     """Test to make sure merkle root computation matches known root."""
-    for block, filename in gen_testblocks():
+    for block, filename in gen_allblocks():
         assert compute_merkle(block['tx'], concathex_doubleSHA256) == block['merkleroot'], (
         f'Merkle root computed in {filename} not equal to known root')
 
 def test_merkletree_init():
-    for block, filename in gen_testblocks():
+    for block, filename in gen_allblocks():
         merk = MerkleTree(hashes=block['tx'], hash_func=concathex_doubleSHA256)
         roothex = merk.root.get_hexdigest()
         trueroothex = block['merkleroot']
@@ -162,7 +169,7 @@ def test_merkletree_add_nonhashes(verbose=False):
 
 def test_merkletree_add_blocks():
     """Test the MerkleTree add function with real block data."""
-    for block, filename in gen_testblocks():
+    for block, filename in gen_allblocks():
         merk = MerkleTree(hash_func=concathex_doubleSHA256)
         for hexhash in block['tx']:
             merk.add_hash(hexhash)
