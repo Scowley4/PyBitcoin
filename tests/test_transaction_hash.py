@@ -29,10 +29,14 @@ def pull_random_cb_txs(n=20, path=TXSDIR):
     """Makes TX data files to test tx hashing."""
     from PyBitcoin import blockexplorer as be
     txs = []
-    tx = {}
     for i in range(n):
-        while not tx.get('isCoinBase'):
-            tx = be.get_random_tx()
+        block = be.get_random_block()
+        tx = None
+        while tx is None:
+            try:
+                tx = be.get_tx(block['tx'][0]) # First TX is coinbase
+            except:
+                continue
         rawtx = be.get_rawtx(tx['txid'])
         tx['rawtx'] = rawtx
         txs.append(tx)
@@ -41,21 +45,22 @@ def pull_random_cb_txs(n=20, path=TXSDIR):
 
     for i, tx in enumerate(txs):
         ind = str(i).zfill(3)
-        filename = os.path.join(path, f'coinbase_tx{ind}.txt')
+        block_num = str(tx['blockheight']).zfill(6)
+        filename = os.path.join(path, f'coinbase_tx{block_num}.txt')
         with open(filename, 'w') as outfile:
             json.dump(tx, outfile)
 
 def gen_randomtxs():
-    for i in range(20):
-        ind = str(i).zfill(3)
-        filename = os.path.join(TXSDIR, f'random_tx{ind}.txt')
+    files = [f for f in os.listdir(TXSDIR) if 'random' in f]
+    for filename in files:
+        filename = os.path.join(TXSDIR, filename)
         with open(filename) as infile:
             tx = json.load(infile)
         yield (tx, filename)
 
 def gen_coinbasetxs():
-    for i in range(20):
-        ind = str(i).zfill(3)
+    files = [f for f in os.listdir(TXSDIR) if 'coinbase' in f]
+    for filename in files:
         filename = os.path.join(TXSDIR, f'coinbase_tx{ind}.txt')
         with open(filename) as infile:
             tx = json.load(infile)
