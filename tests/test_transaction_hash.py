@@ -109,11 +109,13 @@ def test_genesis_tx_to_hex():
         assert h == tx['rawtx']
 
 def test_tx_to_hex():
+    """Test that all txs are built to their correct rawtx."""
     for tx, filename in gen_alltxs():
         rawtx = th.tx_to_hex(tx)
         assert rawtx == tx['rawtx'], (f'{filename} error in tx_to_hex')
 
-def test_tx_to_hex_all():
+def test_tx_to_hex_each():
+    """Same as above test, but gives information about which files failed."""
     wrong = []
     error = []
     for tx, filename in gen_alltxs():
