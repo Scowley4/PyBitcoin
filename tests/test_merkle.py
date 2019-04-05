@@ -9,62 +9,19 @@ from PyBitcoin.crypto_utils import concathex_doubleSHA256
 
 import json
 import os
-
-
+import utils # utils for testing
 
 DATADIR = 'data'
 BLOCKSDIR = os.path.join(DATADIR, 'blocks')
 
-os.makedirs(BLOCKSDIR, exist_ok=True)
-
-def pull_random_blocks(n=20, path=BLOCKSDIR):
-    """Makes block data files to test block/merkle hashing."""
-    from PyBitcoin import blockexplorer as be
-    blocks = []
-    # To provide variety for tests
-    nums = set()
-    while len(nums) < n:
-        block = be.get_random_block()
-        if len(block['tx']) in nums:
-            continue
-        blocks.append(block)
-        nums.add(len(block['tx']))
-        i = len(block['tx'])
-        print(f'{len(blocks)} block data collected', end='\r')
-    print()
-    blocks = sorted(blocks, key=lambda b: len(b['tx']))
-
-    for i, block in enumerate(blocks):
-        ind = str(i).zfill(3)
-        filename = os.path.join(path, f'random_block{ind}.txt')
-        with open(filename, 'w') as outfile:
-            json.dump(block, outfile)
-        print(filename)
-        print()
-
-def gen_randomblocks():
-    for i in range(20):
-        ind = str(i).zfill(3)
-        filename = os.path.join(BLOCKSDIR, f'random_block{ind}.txt')
-        with open(filename) as infile:
-            block = json.load(infile)
-        yield (block, filename)
-
-def gen_allblocks():
-    for filename in os.listdir(BLOCKSDIR):
-        filename = os.path.join(BLOCKSDIR, filename)
-        with open(filename) as infile:
-            block = json.load(infile)
-        yield (block, filename)
-
 def test_compute_merkle():
     """Test to make sure merkle root computation matches known root."""
-    for block, filename in gen_allblocks():
+    for block, filename in utils.gen_allblocks():
         assert compute_merkle(block['tx'], concathex_doubleSHA256) == block['merkleroot'], (
         f'Merkle root computed in {filename} not equal to known root')
 
 def test_merkletree_init():
-    for block, filename in gen_allblocks():
+    for block, filename in utils.gen_allblocks():
         merk = MerkleTree(hashes=block['tx'], hash_func=concathex_doubleSHA256)
         roothex = merk.root.get_hexdigest()
         trueroothex = block['merkleroot']
@@ -169,7 +126,7 @@ def test_merkletree_add_nonhashes(verbose=False):
 
 def test_merkletree_add_blocks():
     """Test the MerkleTree add function with real block data."""
-    for block, filename in gen_allblocks():
+    for block, filename in utils.gen_allblocks():
         merk = MerkleTree(hash_func=concathex_doubleSHA256)
         for hexhash in block['tx']:
             merk.add_hash(hexhash)
