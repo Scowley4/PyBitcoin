@@ -1,7 +1,6 @@
 from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA256
-from Crypto.Hash import SHA256
 
 def doubleSHA256(bytedata):
     """Returns the byte rep of a double SHA256 hash of the input bytedata."""
@@ -15,6 +14,6 @@ def concathex_doubleSHA256(hex1, hex2):
     the difference in endianness as well.
     """
     # Reverse for big-endian/little-endian conversion
-    hex1 = bytes.fromhex(hex1)[::-1]
-    hex2 = bytes.fromhex(hex2)[::-1]
-    return doubleSHA256(hex1+hex2)[::-1].hex()
+    bytes1 = bytes.fromhex(hex1)[::-1]
+    bytes2 = bytes.fromhex(hex2)[::-1]
+    return doubleSHA256(bytes1+bytes2)[::-1].hex()

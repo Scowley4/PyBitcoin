@@ -1,27 +1,27 @@
 import sys
-for k in ['PyBitcoin', 'PyBitcoin.MerkleTree', 'PyBitcoin.crypto_utils']:
+for k in ['PyBitcoin', 'PyBitcoin.MerkleTree', 'PyBitcoin.utils']:
     try:
         del sys.modules[k]
     except KeyError:
         pass
-from PyBitcoin.Merkle import compute_merkle, MerkleTree
-from PyBitcoin.crypto_utils import concathex_doubleSHA256
+from PyBitcoin.merkle import compute_merkle, MerkleTree
+from PyBitcoin.utils.crypto import concathex_doubleSHA256
 
 import json
 import os
-import utils # utils for testing
+import testing_utils # utils for testing
 
 DATADIR = 'data'
 BLOCKSDIR = os.path.join(DATADIR, 'blocks')
 
 def test_compute_merkle():
     """Test to make sure merkle root computation matches known root."""
-    for block, filename in utils.gen_allblocks():
+    for block, filename in testing_utils.gen_allblocks():
         assert compute_merkle(block['tx'], concathex_doubleSHA256) == block['merkleroot'], (
         f'Merkle root computed in {filename} not equal to known root')
 
 def test_merkletree_init():
-    for block, filename in utils.gen_allblocks():
+    for block, filename in testing_utils.gen_allblocks():
         merk = MerkleTree(hashes=block['tx'], hash_func=concathex_doubleSHA256)
         roothex = merk.root.get_hexdigest()
         trueroothex = block['merkleroot']
@@ -126,7 +126,7 @@ def test_merkletree_add_nonhashes(verbose=False):
 
 def test_merkletree_add_blocks():
     """Test the MerkleTree add function with real block data."""
-    for block, filename in utils.gen_allblocks():
+    for block, filename in testing_utils.gen_allblocks():
         merk = MerkleTree(hash_func=concathex_doubleSHA256)
         for hexhash in block['tx']:
             merk.add_hash(hexhash)

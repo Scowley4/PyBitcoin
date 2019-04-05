@@ -1,41 +1,9 @@
-import Crypto.Hash.SHA256 as hash_func, binascii
-
-def hex_byte_swap(h):
-    return bytes.fromhex(h)[::-1].hex()
-
-def int_to_4bytehex_LE(i):
-    return hex_byte_swap('{:08x}'.format(i))
-
-def int_to_nbyte_hex(i, n, lendian=True):
-    h = ('{:x}'.format(i)).zfill(n*2)
-    if lendian:
-        h = hex_byte_swap(h)
-    return h
-
-def int_to_varint(i):
-    if i <= 0xfc:
-        prefix = ''
-        n_bytes = 1
-    elif i <= 0xffff:
-        prefix = 'fd'
-        n_bytes = 2
-    elif i <= 0xffffffff:
-        prefix = 'fe'
-        n_bytes = 4
-    elif i <= 0xffffffffffffffff:
-        prefix = 'ff'
-        n_bytes = 8
-    return prefix + int_to_nbyte_hex(i, n_bytes)
-
-
-def varint_to_int(varint):
-    h = varint[2:] if len(varint)>2 else varint
-    return int(hex_byte_swap(h), 16)
+from .utils.conversions import hex_byte_swap, int_to_nbyte_hex, int_to_varint
 
 def tx_to_hex(tx):
     """Sends the tx (dict) to raw hex value to be hashed."""
     # Version number - 4 bytes
-    result = int_to_nbyte_hex(tx['version'], 4)
+    result = int_to_nbyte_hex(tx['version'], 4, lendian=True)
 
     # Number of inputs - Varint
     n_in = len(tx['vin'])
@@ -50,12 +18,12 @@ def tx_to_hex(tx):
             result += hex_byte_swap(txin['txid'])
 
             # Index of prev output - 4 bytes
-            result += int_to_nbyte_hex(txin['vout'], 4)
+            result += int_to_nbyte_hex(txin['vout'], 4, lendian=True)
 
             # sig on the scriptSig
             sig = txin['scriptSig']['hex']
         elif 'coinbase' in txin:
-            result += int_to_nbyte_hex(0, 32)
+            result += int_to_nbyte_hex(0, 32, lendian=True)
 
             # Index is max - 4 bytes
             result += 'f'*8
@@ -72,7 +40,7 @@ def tx_to_hex(tx):
         result += sig
 
         # NOTE I'm not sure what the sequence is - 4 bytes
-        result += int_to_nbyte_hex((txin['sequence']), 4)
+        result += int_to_nbyte_hex((txin['sequence']), 4, lendian=True)
 
     # Number of outputs - Varint
     n_out = len(tx['vout'])
@@ -84,7 +52,7 @@ def tx_to_hex(tx):
         # Hex value in satoshis - 8 bytes
         value = txout['value']
         s_value = int(value.replace('.', '')) # convert to satoshis
-        result += int_to_nbyte_hex(s_value, 8)
+        result += int_to_nbyte_hex(s_value, 8, lendian=True)
 
         # scriptPubKey size - Varint
         sig = txout['scriptPubKey']['hex']
@@ -95,7 +63,7 @@ def tx_to_hex(tx):
         result += sig
 
     # Locktime - 4 bytes
-    result += int_to_nbyte_hex(tx['locktime'], 4)
+    result += int_to_nbyte_hex(tx['locktime'], 4, lendian=True)
 
     return result
 #asm https://bitcoin.stackexchange.com/questions/24651/whats-asm-in-transaction-inputs-scriptsig/24659

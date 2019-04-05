@@ -1,4 +1,4 @@
-from PyBitcoin.crypto_utils import doubleSHA256, concathex_doubleSHA256
+from PyBitcoin.utils.crypto import doubleSHA256, concathex_doubleSHA256
 
 class MerkleTree:
     """"""

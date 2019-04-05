@@ -3,7 +3,7 @@ import random
 
 BASE = 'https://blockexplorer.com'
 
-def get_random_block(a=0, b=570000):
+def get_random_block(a=0, b=269400):
     """Returns the JSON rep of a random block."""
     height = random.randint(a, b)
     return get_block(get_block_hash(height))
@@ -22,7 +22,7 @@ def get_block(blockhash):
 
 def get_rawblock(blockhash):
     """Returns the byte rep of the block with the given blockhash."""
-    return requests.get(BASE+f'/api/block/{blockhash}').json()['rawblock']
+    return requests.get(BASE+f'/api/rawblock/{blockhash}').json()['rawblock']
 
 def get_tx(txid):
     """Returns the JSON rep of the TX with the given txid."""
