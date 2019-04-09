@@ -1,6 +1,6 @@
 from .utils.conversions import hex_byte_swap, int_to_nbyte_hex, int_to_varint
 
-def tx_to_hex(tx):
+def tx_to_raw(tx):
     """Sends the tx (dict) to raw hex value to be hashed."""
     # Version number - 4 bytes
     result = int_to_nbyte_hex(tx['version'], 4, lendian=True)
