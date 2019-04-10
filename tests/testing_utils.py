@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 
 DATADIR = 'data'
 BLOCKSDIR = os.path.join(DATADIR, 'blocks')
@@ -7,6 +8,52 @@ TXSDIR = os.path.join(DATADIR, 'txs')
 
 os.makedirs(BLOCKSDIR, exist_ok=True)
 os.makedirs(TXSDIR, exist_ok=True)
+
+def reset_imports():
+    keys = [k for k in sys.modules if 'PyBitcoin' in k]
+    for k in keys:
+        try:
+            del sys.modules[k]
+        except KeyError:
+            pass
+
+
+def is_consistent(obj1, obj2, verbose=False):
+    # Make sure they are the same type
+    if verbose:
+        print('\t', end='')
+    if not isinstance(obj1, type(obj2)):
+        if verbose:
+            print(f'TYPE ERROR {obj1} {obj2}')
+        return False
+
+    # If they are dicts, check that they don't contradict
+    elif isinstance(obj1, dict):
+        return dicts_contradict(obj1, obj2)
+
+    # If they are lists, check each element
+    elif isinstance(obj1, list):
+        if len(obj1) != len(obj2):
+            if verbose:
+                print(f'LEN ERROR {obj1} {obj2}')
+            return False
+        for o1, o2 in zip(obj1, obj2):
+            return is_consistent(o1, o2, verbose)
+
+    # Otherwise check that they are equal
+    elif type(obj1) in [int, float, str]:
+        return obj1 == obj2
+    else:
+        print(type(obj1))
+        raise ValueError
+
+def dicts_contradict(d1, d2, verbose=False):
+    """Only counts as contradicting if the same keys have contradicting values.
+    Additional keys in either dictionary don't count as contradicting."""
+    for k in d1:
+        if k in d2:
+            return is_consistent(d1[k], d2[k])
+
 
 def pull_random_blocks(n=10, path=BLOCKSDIR):
     """Makes block data files to test block/merkle hashing."""
