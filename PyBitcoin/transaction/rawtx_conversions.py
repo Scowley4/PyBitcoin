@@ -74,7 +74,6 @@ def tx_to_raw(tx):
 def raw_to_tx(raw):
     """Converts the raw hex tx to a tx dict."""
     tx = dict()
-    ind = 0
 
     # Version - 4 bytes
     version, raw = split_n_bytes(raw, 4)
