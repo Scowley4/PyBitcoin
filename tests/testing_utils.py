@@ -3,8 +3,8 @@ import os
 import sys
 
 DATADIR = 'data'
-BLOCKSDIR = os.path.join(DATADIR, 'blocks')
-TXSDIR = os.path.join(DATADIR, 'txs')
+BLOCKSDIR = os.path.abspath(os.path.join(DATADIR, 'blocks'))
+TXSDIR = os.path.abspath(os.path.join(DATADIR, 'txs'))
 
 os.makedirs(BLOCKSDIR, exist_ok=True)
 os.makedirs(TXSDIR, exist_ok=True)
@@ -75,6 +75,9 @@ def pull_random_blocks(n=10, path=BLOCKSDIR):
         block = be.get_random_block()
         rawblock = be.get_rawblock(block['hash'])
         block['rawblock'] = rawblock
+        # 2 * (4byte version + 32byte prevblockhash + 32byte merkleroot +
+        #      4byte time + 4byte bits + 4byte nonce) = 160
+        block['rawblockheader'] = rawblock[:160]
 
         blocks.append(block)
         print(f'{len(blocks)} block data collected', end='\r')
