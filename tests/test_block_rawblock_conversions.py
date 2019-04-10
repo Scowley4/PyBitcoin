@@ -26,7 +26,14 @@ def test_blockheader_to_raw_each():
     assert (len(wrong)==0) and (len(error)==0), (
         f'wrong {len(wrong)}: {wrong}\nerror {len(error)}: {error}')
 
-
 def test_raw_to_blockheader():
     """Test that all rawblockheaders are consistent with converted dict rep."""
-    pass
+    for block, filename in testing_utils.gen_allblocks():
+        header = raw_to_blockheader(block['rawblockheader'])
+        assert testing_utils.is_consistent(header, block)
+
+def test_rawblockheader_back_forth():
+    for block, filename in testing_utils.gen_allblocks():
+        header = raw_to_blockheader(block['rawblockheader'])
+        rawblockheader1 = blockheader_to_raw(header)
+        assert rawblockheader1 == block['rawblockheader']
