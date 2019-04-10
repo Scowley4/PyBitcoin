@@ -19,6 +19,18 @@ def reset_imports():
 
 
 def is_consistent(obj1, obj2, verbose=False):
+    """Basically checks for equality on two objects (recursively if needed).
+    The main benefit of this is that the any dict objects don't need to match
+    exactly; they only need to not contradict.
+
+    For dicts
+        (k1 in d1) and (k1 not in d2) -> fine
+        (k2 in d2) and (k2 not in d1) -> fine
+
+        d1[k] != d2[k] -> return False
+
+    """
+
     # Make sure they are the same type
     if verbose:
         print('\t', end='')
